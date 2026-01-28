@@ -26,12 +26,13 @@ export async function run(): Promise<void> {
     }
 
     // Run npx apps install with Datadog credentials in environment
-    await exec.exec('npx', ['apps', 'install'], {
-      env,
-      silent: false
-    })
+    // await exec.exec('npx', ['apps', 'install'], {
+    //   env,
+    //   silent: false
+    // })
 
     await exec.exec('ls', ['-la'], {
+      env,
       silent: false
     })
 
