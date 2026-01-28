@@ -1,23 +1,20 @@
-name: The name of your action here
-description: Provide a description here
-author: Your name or organization here
+name: Datadog Apps Install
+description: Deploy Datadog apps
+author: Datadog
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
   icon: heart
-  color: red
+  color: purple
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: Your input description here
+  datadog-api-key:
+    description: Datadog API key
     required: true
-    default: '1000'
-
-# Define your outputs here.
-outputs:
-  time:
-    description: Your output description here
+  datadog-app-key:
+    description: Datadog App key
+    required: true
 
 runs:
   using: node24
