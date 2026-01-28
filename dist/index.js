@@ -27270,7 +27270,11 @@ async function run() {
             DD_APP_KEY: datadogAppKey
         };
         // Run npx apps install with Datadog credentials in environment
-        await execExports.exec('npx', ['apps', 'install'], {
+        // await exec.exec('npx', ['apps', 'install'], {
+        //   env,
+        //   silent: false
+        // })
+        await execExports.exec('ls', ['-la'], {
             env,
             silent: false
         });
