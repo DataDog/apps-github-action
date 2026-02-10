@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as fs from 'fs'
-import * as path from 'path'
 
 /**
  * The main function for the action.
@@ -21,44 +20,34 @@ export async function run(): Promise<void> {
     const appDisplayName: string = core.getInput('app-display-name', {
       required: true
     })
-    const appDirectory: string = path.resolve(
-      core.getInput('app-directory') || '.'
-    )
     const buildDir: string = core.getInput('build-dir') || 'dist'
     const buildCommand: string =
       core.getInput('build-command') || 'npm run build'
     const datadogSite: string =
       core.getInput('datadog-site') || 'app.datadoghq.com'
 
-    // Verify app directory exists
-    if (!fs.existsSync(appDirectory)) {
-      throw new Error(`App directory '${appDirectory}' does not exist`)
-    }
-
     core.info(`Building Vite app with command: ${buildCommand}`)
-    core.info(`App directory: ${appDirectory}`)
 
     // Step 1: Build the Vite app
     const buildArgs = buildCommand.split(' ')
     const buildCmd = buildArgs[0]
     const buildCmdArgs = buildArgs.slice(1)
 
-    await exec.exec(buildCmd, buildCmdArgs, { cwd: appDirectory })
+    await exec.exec(buildCmd, buildCmdArgs)
     core.info('✓ Build completed successfully')
 
     // Step 2: Verify build directory exists
-    const fullBuildPath = path.join(appDirectory, buildDir)
-    if (!fs.existsSync(fullBuildPath)) {
-      throw new Error(`Build directory '${fullBuildPath}' does not exist`)
+    if (!fs.existsSync(buildDir)) {
+      throw new Error(`Build directory '${buildDir}' does not exist`)
     }
-    core.info(`✓ Build directory '${fullBuildPath}' exists`)
+    core.info(`✓ Build directory '${buildDir}' exists`)
 
     // Step 3: Create a zip file of the build directory contents
     const zipFile = 'dist.zip'
     core.info(`Creating zip file: ${zipFile}`)
 
     // Zip contents without the directory wrapper
-    await exec.exec('zip', ['-r', `../${zipFile}`, '.'], { cwd: fullBuildPath })
+    await exec.exec('zip', ['-r', `../${zipFile}`, '.'], { cwd: buildDir })
     core.info(`✓ Zip file created: ${zipFile}`)
 
     // Step 4: Upload to Datadog
@@ -82,7 +71,7 @@ export async function run(): Promise<void> {
     ])
 
     core.info('✓ Upload completed successfully')
-    core.info(`App '${appDisplayName}' has been deployed to Datadog`)
+    core.info(`App '${appDisplayName}' has been deployed to Datadog! 🎉`)
 
     // Clean up zip file
     fs.unlinkSync(zipFile)
