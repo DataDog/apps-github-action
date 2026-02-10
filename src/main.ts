@@ -25,6 +25,7 @@ export async function run(): Promise<void> {
       core.getInput('app-directory') || '.'
     )
     const buildDir: string = core.getInput('build-dir') || 'dist'
+    const installCommand: string = core.getInput('install-command') || 'npm ci'
     const buildCommand: string =
       core.getInput('build-command') || 'npm run build'
     const datadogSite: string =
@@ -36,9 +37,19 @@ export async function run(): Promise<void> {
     }
     core.info(`App directory found: ${appDirectory}`)
 
-    core.info(`Building Vite app with command: ${buildCommand}`)
+    // Step 1: Install dependencies (if install command is provided)
+    if (installCommand) {
+      core.info(`Installing dependencies with command: ${installCommand}`)
+      const installArgs = installCommand.split(' ')
+      const installCmd = installArgs[0]
+      const installCmdArgs = installArgs.slice(1)
 
-    // Step 1: Build the Vite app
+      await exec.exec(installCmd, installCmdArgs, { cwd: appDirectory })
+      core.info('✓ Dependencies installed successfully')
+    }
+
+    // Step 2: Build the Vite app
+    core.info(`Building Vite app with command: ${buildCommand}`)
     const buildArgs = buildCommand.split(' ')
     const buildCmd = buildArgs[0]
     const buildCmdArgs = buildArgs.slice(1)
@@ -46,14 +57,14 @@ export async function run(): Promise<void> {
     await exec.exec(buildCmd, buildCmdArgs, { cwd: appDirectory })
     core.info('✓ Build completed successfully')
 
-    // Step 2: Verify build directory exists
+    // Step 3: Verify build directory exists
     const fullBuildPath = path.join(appDirectory, buildDir)
     if (!fs.existsSync(fullBuildPath)) {
       throw new Error(`Build directory '${fullBuildPath}' does not exist`)
     }
     core.info(`✓ Build directory '${fullBuildPath}' exists`)
 
-    // Step 3: Create a zip file of the build directory contents
+    // Step 4: Create a zip file of the build directory contents
     const zipFile = 'dist.zip'
     core.info(`Creating zip file: ${zipFile}`)
 
@@ -61,7 +72,7 @@ export async function run(): Promise<void> {
     await exec.exec('zip', ['-r', `../${zipFile}`, '.'], { cwd: fullBuildPath })
     core.info(`✓ Zip file created: ${zipFile}`)
 
-    // Step 4: Upload to Datadog
+    // Step 5: Upload to Datadog
     const uploadUrl = `https://${datadogSite}/api/unstable/app-builder-code/apps/${appName}/upload`
     core.info(`Uploading to Datadog: ${uploadUrl}`)
 

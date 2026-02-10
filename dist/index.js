@@ -27270,6 +27270,7 @@ async function run() {
         });
         const appDirectory = require$$1.resolve(coreExports.getInput('app-directory') || '.');
         const buildDir = coreExports.getInput('build-dir') || 'dist';
+        const installCommand = coreExports.getInput('install-command') || 'npm ci';
         const buildCommand = coreExports.getInput('build-command') || 'npm run build';
         const datadogSite = coreExports.getInput('datadog-site') || 'app.datadoghq.com';
         // Verify app directory exists
@@ -27277,26 +27278,35 @@ async function run() {
             throw new Error(`App directory '${appDirectory}' does not exist`);
         }
         coreExports.info(`App directory found: ${appDirectory}`);
+        // Step 1: Install dependencies (if install command is provided)
+        if (installCommand) {
+            coreExports.info(`Installing dependencies with command: ${installCommand}`);
+            const installArgs = installCommand.split(' ');
+            const installCmd = installArgs[0];
+            const installCmdArgs = installArgs.slice(1);
+            await execExports.exec(installCmd, installCmdArgs, { cwd: appDirectory });
+            coreExports.info('✓ Dependencies installed successfully');
+        }
+        // Step 2: Build the Vite app
         coreExports.info(`Building Vite app with command: ${buildCommand}`);
-        // Step 1: Build the Vite app
         const buildArgs = buildCommand.split(' ');
         const buildCmd = buildArgs[0];
         const buildCmdArgs = buildArgs.slice(1);
         await execExports.exec(buildCmd, buildCmdArgs, { cwd: appDirectory });
         coreExports.info('✓ Build completed successfully');
-        // Step 2: Verify build directory exists
+        // Step 3: Verify build directory exists
         const fullBuildPath = require$$1.join(appDirectory, buildDir);
         if (!fs.existsSync(fullBuildPath)) {
             throw new Error(`Build directory '${fullBuildPath}' does not exist`);
         }
         coreExports.info(`✓ Build directory '${fullBuildPath}' exists`);
-        // Step 3: Create a zip file of the build directory contents
+        // Step 4: Create a zip file of the build directory contents
         const zipFile = 'dist.zip';
         coreExports.info(`Creating zip file: ${zipFile}`);
         // Zip contents without the directory wrapper
         await execExports.exec('zip', ['-r', `../${zipFile}`, '.'], { cwd: fullBuildPath });
         coreExports.info(`✓ Zip file created: ${zipFile}`);
-        // Step 4: Upload to Datadog
+        // Step 5: Upload to Datadog
         const uploadUrl = `https://${datadogSite}/api/unstable/app-builder-code/apps/${appName}/upload`;
         coreExports.info(`Uploading to Datadog: ${uploadUrl}`);
         await execExports.exec('curl', [

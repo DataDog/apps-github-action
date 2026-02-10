@@ -30,6 +30,10 @@ inputs:
       Directory containing the build output, relative to app-directory
     required: false
     default: dist
+  install-command:
+    description: Command to install dependencies before building
+    required: false
+    default: npm ci
   build-command:
     description: Command to build the Vite app
     required: false
