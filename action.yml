@@ -21,8 +21,12 @@ inputs:
   app-display-name:
     description: The display name for the app
     required: true
+  app-directory:
+    description: Root directory of the app
+    required: false
+    default: '.'
   build-dir:
-    description: Directory containing the build output
+    description: Directory containing the build output, relative to app-directory
     required: false
     default: dist
   build-command:
