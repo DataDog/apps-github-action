@@ -21,18 +21,22 @@ inputs:
   app-display-name:
     description: The display name for the app
     required: true
+  app-directory:
+    description: Root directory of the app
+    required: false
+    default: '.'
   build-dir:
-    description: Directory containing the build output (default is dist)
+    description: Directory containing the build output, relative to app-directory
     required: false
     default: dist
   build-command:
-    description: Command to build the Vite app (default is npm run build)
+    description: Command to build the Vite app
     required: false
     default: npm run build
   datadog-site:
-    description: Datadog site (default is dd.datad0g.com)
+    description: Datadog site
     required: false
-    default: dd.datad0g.com
+    default: app.datadoghq.com
 
 runs:
   using: node24
