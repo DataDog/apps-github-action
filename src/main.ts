@@ -34,9 +34,9 @@ export async function run(): Promise<void> {
     if (!fs.existsSync(appDirectory)) {
       throw new Error(`App directory '${appDirectory}' does not exist`)
     }
+    core.info(`App directory found: ${appDirectory}`)
 
     core.info(`Building Vite app with command: ${buildCommand}`)
-    core.info(`App directory: ${appDirectory}`)
 
     // Step 1: Build the Vite app
     const buildArgs = buildCommand.split(' ')
