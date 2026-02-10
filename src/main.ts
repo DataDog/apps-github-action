@@ -21,7 +21,9 @@ export async function run(): Promise<void> {
     const appDisplayName: string = core.getInput('app-display-name', {
       required: true
     })
-    const appDirectory: string = core.getInput('app-directory') || '.'
+    const appDirectory: string = path.resolve(
+      core.getInput('app-directory') || '.'
+    )
     const buildDir: string = core.getInput('build-dir') || 'dist'
     const buildCommand: string =
       core.getInput('build-command') || 'npm run build'
