@@ -96,8 +96,9 @@ export async function run(): Promise<void> {
       { cwd: appDirectory }
     )
 
+    core.info('') // Empty line for formatting
     core.info('✓ Upload completed successfully')
-    core.info(`App '${appDisplayName}' has been deployed to Datadog`)
+    core.info(`App '${appDisplayName}' has been deployed to Datadog! 🎉`)
 
     // Clean up zip file
     const zipFilePath = path.join(appDirectory, zipFile)

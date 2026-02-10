@@ -27324,8 +27324,9 @@ async function run() {
             '-F',
             `name=${appDisplayName}`
         ], { cwd: appDirectory });
+        coreExports.info(''); // Empty line for formatting
         coreExports.info('✓ Upload completed successfully');
-        coreExports.info(`App '${appDisplayName}' has been deployed to Datadog`);
+        coreExports.info(`App '${appDisplayName}' has been deployed to Datadog! 🎉`);
         // Clean up zip file
         const zipFilePath = path.join(appDirectory, zipFile);
         fs.unlinkSync(zipFilePath);
