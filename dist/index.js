@@ -1,8 +1,9 @@
 import require$$0 from 'os';
 import require$$0$1 from 'crypto';
-import * as require$$1 from 'fs';
-import require$$1__default from 'fs';
-import require$$1$5 from 'path';
+import * as fs from 'fs';
+import fs__default from 'fs';
+import * as require$$1 from 'path';
+import require$$1__default from 'path';
 import require$$2 from 'http';
 import require$$3 from 'https';
 import require$$0$4 from 'net';
@@ -223,7 +224,7 @@ function requireFileCommand () {
 	// We use any as a valid input type
 	/* eslint-disable @typescript-eslint/no-explicit-any */
 	const crypto = __importStar(require$$0$1);
-	const fs = __importStar(require$$1__default);
+	const fs = __importStar(fs__default);
 	const os = __importStar(require$$0);
 	const utils_1 = requireUtils$1();
 	function issueFileCommand(command, message) {
@@ -25201,7 +25202,7 @@ function requireSummary () {
 		Object.defineProperty(exports$1, "__esModule", { value: true });
 		exports$1.summary = exports$1.markdownSummary = exports$1.SUMMARY_DOCS_URL = exports$1.SUMMARY_ENV_VAR = void 0;
 		const os_1 = require$$0;
-		const fs_1 = require$$1__default;
+		const fs_1 = fs__default;
 		const { access, appendFile, writeFile } = fs_1.promises;
 		exports$1.SUMMARY_ENV_VAR = 'GITHUB_STEP_SUMMARY';
 		exports$1.SUMMARY_DOCS_URL = 'https://docs.github.com/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary';
@@ -25507,7 +25508,7 @@ function requirePathUtils () {
 	};
 	Object.defineProperty(pathUtils, "__esModule", { value: true });
 	pathUtils.toPlatformPath = pathUtils.toWin32Path = pathUtils.toPosixPath = void 0;
-	const path = __importStar(require$$1$5);
+	const path = __importStar(require$$1__default);
 	/**
 	 * toPosixPath converts the given path to the posix form. On Windows, \\ will be
 	 * replaced with /.
@@ -25593,8 +25594,8 @@ function requireIoUtil () {
 		var _a;
 		Object.defineProperty(exports$1, "__esModule", { value: true });
 		exports$1.getCmdPath = exports$1.tryGetExecutablePath = exports$1.isRooted = exports$1.isDirectory = exports$1.exists = exports$1.READONLY = exports$1.UV_FS_O_EXLOCK = exports$1.IS_WINDOWS = exports$1.unlink = exports$1.symlink = exports$1.stat = exports$1.rmdir = exports$1.rm = exports$1.rename = exports$1.readlink = exports$1.readdir = exports$1.open = exports$1.mkdir = exports$1.lstat = exports$1.copyFile = exports$1.chmod = void 0;
-		const fs = __importStar(require$$1__default);
-		const path = __importStar(require$$1$5);
+		const fs = __importStar(fs__default);
+		const path = __importStar(require$$1__default);
 		_a = fs.promises
 		// export const {open} = 'fs'
 		, exports$1.chmod = _a.chmod, exports$1.copyFile = _a.copyFile, exports$1.lstat = _a.lstat, exports$1.mkdir = _a.mkdir, exports$1.open = _a.open, exports$1.readdir = _a.readdir, exports$1.readlink = _a.readlink, exports$1.rename = _a.rename, exports$1.rm = _a.rm, exports$1.rmdir = _a.rmdir, exports$1.stat = _a.stat, exports$1.symlink = _a.symlink, exports$1.unlink = _a.unlink;
@@ -25784,7 +25785,7 @@ function requireIo () {
 	Object.defineProperty(io, "__esModule", { value: true });
 	io.findInPath = io.which = io.mkdirP = io.rmRF = io.mv = io.cp = void 0;
 	const assert_1 = require$$0$3;
-	const path = __importStar(require$$1$5);
+	const path = __importStar(require$$1__default);
 	const ioUtil = __importStar(requireIoUtil());
 	/**
 	 * Copies a file or folder.
@@ -26092,7 +26093,7 @@ function requireToolrunner () {
 	const os = __importStar(require$$0);
 	const events = __importStar(require$$4);
 	const child = __importStar(require$$2$2);
-	const path = __importStar(require$$1$5);
+	const path = __importStar(require$$1__default);
 	const io = __importStar(requireIo());
 	const ioUtil = __importStar(requireIoUtil());
 	const timers_1 = require$$6$1;
@@ -26936,7 +26937,7 @@ function requireCore () {
 		const file_command_1 = requireFileCommand();
 		const utils_1 = requireUtils$1();
 		const os = __importStar(require$$0);
-		const path = __importStar(require$$1$5);
+		const path = __importStar(require$$1__default);
 		const oidc_utils_1 = requireOidcUtils();
 		/**
 		 * The code to exit an action
@@ -27267,25 +27268,33 @@ async function run() {
         const appDisplayName = coreExports.getInput('app-display-name', {
             required: true
         });
+        const appDirectory = require$$1.resolve(coreExports.getInput('app-directory') || '.');
         const buildDir = coreExports.getInput('build-dir') || 'dist';
         const buildCommand = coreExports.getInput('build-command') || 'npm run build';
-        const datadogSite = coreExports.getInput('datadog-site') || 'dd.datad0g.com';
+        const datadogSite = coreExports.getInput('datadog-site') || 'app.datadoghq.com';
+        // Verify app directory exists
+        if (!fs.existsSync(appDirectory)) {
+            throw new Error(`App directory '${appDirectory}' does not exist`);
+        }
+        coreExports.info(`App directory found: ${appDirectory}`);
         coreExports.info(`Building Vite app with command: ${buildCommand}`);
         // Step 1: Build the Vite app
         const buildArgs = buildCommand.split(' ');
         const buildCmd = buildArgs[0];
         const buildCmdArgs = buildArgs.slice(1);
-        await execExports.exec(buildCmd, buildCmdArgs);
+        await execExports.exec(buildCmd, buildCmdArgs, { cwd: appDirectory });
         coreExports.info('✓ Build completed successfully');
         // Step 2: Verify build directory exists
-        if (!require$$1.existsSync(buildDir)) {
-            throw new Error(`Build directory '${buildDir}' does not exist`);
+        const fullBuildPath = require$$1.join(appDirectory, buildDir);
+        if (!fs.existsSync(fullBuildPath)) {
+            throw new Error(`Build directory '${fullBuildPath}' does not exist`);
         }
-        coreExports.info(`✓ Build directory '${buildDir}' exists`);
-        // Step 3: Create a zip file of the build directory
+        coreExports.info(`✓ Build directory '${fullBuildPath}' exists`);
+        // Step 3: Create a zip file of the build directory contents
         const zipFile = 'dist.zip';
         coreExports.info(`Creating zip file: ${zipFile}`);
-        await execExports.exec('zip', ['-r', zipFile, buildDir]);
+        // Zip contents without the directory wrapper
+        await execExports.exec('zip', ['-r', `../${zipFile}`, '.'], { cwd: fullBuildPath });
         coreExports.info(`✓ Zip file created: ${zipFile}`);
         // Step 4: Upload to Datadog
         const uploadUrl = `https://${datadogSite}/api/unstable/app-builder-code/apps/${appName}/upload`;
@@ -27308,7 +27317,7 @@ async function run() {
         coreExports.info('✓ Upload completed successfully');
         coreExports.info(`App '${appDisplayName}' has been deployed to Datadog`);
         // Clean up zip file
-        require$$1.unlinkSync(zipFile);
+        fs.unlinkSync(zipFile);
         coreExports.debug('Cleaned up temporary zip file');
     }
     catch (error) {

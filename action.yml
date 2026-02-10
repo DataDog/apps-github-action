@@ -26,7 +26,8 @@ inputs:
     required: false
     default: '.'
   build-dir:
-    description: Directory containing the build output, relative to app-directory
+    description:
+      Directory containing the build output, relative to app-directory
     required: false
     default: dist
   build-command:
