@@ -76,27 +76,32 @@ export async function run(): Promise<void> {
     const uploadUrl = `https://${datadogSite}/api/unstable/app-builder-code/apps/${appName}/upload`
     core.info(`Uploading to Datadog: ${uploadUrl}`)
 
-    await exec.exec('curl', [
-      '-X',
-      'POST',
-      uploadUrl,
-      '-H',
-      'Accept: application/json',
-      '-H',
-      `DD-API-KEY: ${datadogApiKey}`,
-      '-H',
-      `DD-APPLICATION-KEY: ${datadogAppKey}`,
-      '-F',
-      `bundle=@${zipFile}`,
-      '-F',
-      `name=${appDisplayName}`
-    ])
+    await exec.exec(
+      'curl',
+      [
+        '-X',
+        'POST',
+        uploadUrl,
+        '-H',
+        'Accept: application/json',
+        '-H',
+        `DD-API-KEY: ${datadogApiKey}`,
+        '-H',
+        `DD-APPLICATION-KEY: ${datadogAppKey}`,
+        '-F',
+        `bundle=@${zipFile}`,
+        '-F',
+        `name=${appDisplayName}`
+      ],
+      { cwd: appDirectory }
+    )
 
     core.info('✓ Upload completed successfully')
     core.info(`App '${appDisplayName}' has been deployed to Datadog`)
 
     // Clean up zip file
-    fs.unlinkSync(zipFile)
+    const zipFilePath = path.join(appDirectory, zipFile)
+    fs.unlinkSync(zipFilePath)
     core.debug('Cleaned up temporary zip file')
   } catch (error) {
     // Fail the workflow run if an error occurs
