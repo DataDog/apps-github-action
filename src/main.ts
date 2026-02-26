@@ -56,7 +56,7 @@ export async function run(): Promise<void> {
         DATADOG_API_KEY: datadogApiKey,
         DATADOG_APP_KEY: datadogAppKey,
         DATADOG_APPS_VERSION_NAME: gitSha,
-        APPS_UPLOAD_ASSETS: '1'
+        DATADOG_APPS_UPLOAD_ASSETS: '1'
       }
     })
     core.info('✓ Build and upload completed successfully')
