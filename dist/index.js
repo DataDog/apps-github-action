@@ -27271,7 +27271,7 @@ async function run() {
         if (!require$$1$1.existsSync(appDirectory)) {
             throw new Error(`App directory '${appDirectory}' does not exist`);
         }
-        coreExports.info(`App directory found: ${appDirectory}`);
+        coreExports.info(`✓ App directory found: ${appDirectory}`);
         // Step 1: Install dependencies (if install command is provided)
         if (installCommand) {
             coreExports.info(`Installing dependencies with command: ${installCommand}`);
@@ -27299,7 +27299,7 @@ async function run() {
             }
         });
         coreExports.info('✓ Build and upload completed successfully');
-        coreExports.info(`Your app has been deployed to Datadog! 🎉`);
+        coreExports.info(`✓ Your app has been deployed to Datadog! 🎉`);
     }
     catch (error) {
         // Fail the workflow run if an error occurs
