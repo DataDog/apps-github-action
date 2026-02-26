@@ -27,7 +27,7 @@ export async function run(): Promise<void> {
     if (!fs.existsSync(appDirectory)) {
       throw new Error(`App directory '${appDirectory}' does not exist`)
     }
-    core.info(`App directory found: ${appDirectory}`)
+    core.info(`✓ App directory found: ${appDirectory}`)
 
     // Step 1: Install dependencies (if install command is provided)
     if (installCommand) {
@@ -60,7 +60,7 @@ export async function run(): Promise<void> {
       }
     })
     core.info('✓ Build and upload completed successfully')
-    core.info(`Your app has been deployed to Datadog! 🎉`)
+    core.info(`✓ Your app has been deployed to Datadog! 🎉`)
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
