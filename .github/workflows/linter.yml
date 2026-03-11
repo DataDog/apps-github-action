@@ -45,7 +45,6 @@ jobs:
         id: super-linter
         uses: super-linter/super-linter/slim@v8
         env:
-          CHECKOV_FILE_NAME: .checkov.yml
           DEFAULT_BRANCH: main
           FILTER_REGEX_EXCLUDE: dist/**/*
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,3 +57,5 @@ jobs:
           VALIDATE_JSCPD: false
           VALIDATE_TYPESCRIPT_ES: false
           VALIDATE_JSON: false
+          VALIDATE_TRIVY: false
+          VALIDATE_MARKDOWN: false

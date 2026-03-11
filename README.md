@@ -14,7 +14,7 @@ To get started:
 
 ## Sample Workflows
 
-### Deploy on each commit to main (single-app repo, app at root)
+### Deploy on each commit to main (single-app repository, app at root)
 
 ```yaml
 name: Continuous Deployment
