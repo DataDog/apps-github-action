@@ -9,7 +9,12 @@ import { jest } from '@jest/globals'
 import * as core from '../__fixtures__/core.js'
 import * as execModule from '../__fixtures__/exec.js'
 
+const mockExistsSync = jest.fn<typeof import('fs').existsSync>()
+
 // Mocks should be declared before the module being tested is imported.
+jest.unstable_mockModule('fs', () => ({
+  existsSync: mockExistsSync
+}))
 jest.unstable_mockModule('@actions/core', () => core)
 jest.unstable_mockModule('@actions/exec', () => execModule)
 
@@ -17,85 +22,179 @@ jest.unstable_mockModule('@actions/exec', () => execModule)
 // mocks are used in place of any actual dependencies.
 const { run } = await import('../src/main.js')
 
-describe('main.ts', () => {
+describe('run()', () => {
   beforeEach(() => {
-    // Set the action's inputs as return values from core.getInput().
     core.getInput.mockImplementation((name: string) => {
       if (name === 'datadog-api-key') return 'test-api-key'
       if (name === 'datadog-app-key') return 'test-app-key'
       return ''
     })
-
-    // Mock exec.exec to resolve successfully
-    execModule.exec.exec.mockResolvedValue(0)
+    mockExistsSync.mockReturnValue(true)
+    execModule.exec.mockResolvedValue(0)
+    process.env.GITHUB_SHA = 'abc123sha'
   })
 
   afterEach(() => {
     jest.resetAllMocks()
+    delete process.env.GITHUB_SHA
   })
 
-  it('Runs npx apps install with correct environment variables', async () => {
+  it('requires datadog-api-key and datadog-app-key as inputs', async () => {
     await run()
 
-    // Verify that npx apps install was called
-    expect(execModule.exec.exec).toHaveBeenCalledWith(
-      'npx',
-      ['apps', 'install'],
-      expect.objectContaining({
-        env: expect.objectContaining({
-          DD_API_KEY: 'test-api-key',
-          DD_APP_KEY: 'test-app-key'
-        }),
-        silent: false
-      })
-    )
-
-    // Verify success message was logged
-    expect(core.info).toHaveBeenCalledWith(
-      'Datadog apps installation completed successfully'
-    )
-  })
-
-  it('Sets environment variables correctly', async () => {
-    await run()
-
-    const execCall = execModule.exec.exec.mock.calls.find(
-      (call) => call[0] === 'npx' && call[1][0] === 'apps'
-    )
-
-    expect(execCall).toBeDefined()
-    expect(execCall?.[2]?.env).toMatchObject({
-      DD_API_KEY: 'test-api-key',
-      DD_APP_KEY: 'test-app-key'
-    })
-  })
-
-  it('Handles errors correctly', async () => {
-    const error = new Error('npx command failed')
-    execModule.exec.exec.mockRejectedValueOnce(error)
-
-    await run()
-
-    // Verify that the action was marked as failed.
-    expect(core.setFailed).toHaveBeenCalledWith('npx command failed')
-  })
-
-  it('Requires both API key and App key', async () => {
-    core.getInput.mockImplementation((name: string) => {
-      if (name === 'datadog-api-key') return 'test-api-key'
-      // Missing app key
-      return ''
-    })
-
-    await run()
-
-    // The action should still attempt to run, but may fail
-    // This tests that getInput is called with required: true
     expect(core.getInput).toHaveBeenCalledWith('datadog-api-key', {
       required: true
     })
     expect(core.getInput).toHaveBeenCalledWith('datadog-app-key', {
       required: true
     })
+  })
+
+  it('runs the install command before the build command', async () => {
+    await run()
+
+    expect(execModule.exec).toHaveBeenCalledTimes(2)
+    const [firstCall, secondCall] = execModule.exec.mock.calls
+    expect(firstCall[0]).toBe('npm')
+    expect(firstCall[1]).toEqual(['ci'])
+    expect(secondCall[0]).toBe('npm')
+    expect(secondCall[1]).toEqual(['run', 'build'])
+  })
+
+  it('passes Datadog credentials and metadata to the build command', async () => {
+    await run()
+
+    expect(execModule.exec).toHaveBeenCalledWith(
+      'npm',
+      ['run', 'build'],
+      expect.objectContaining({
+        env: expect.objectContaining({
+          DATADOG_API_KEY: 'test-api-key',
+          DATADOG_APP_KEY: 'test-app-key',
+          DATADOG_APPS_VERSION_NAME: 'abc123sha',
+          DATADOG_APPS_UPLOAD_ASSETS: '1'
+        })
+      })
+    )
+  })
+
+  it('uses GITHUB_SHA as the app version name', async () => {
+    process.env.GITHUB_SHA = 'deadbeef'
+
+    await run()
+
+    expect(execModule.exec).toHaveBeenCalledWith(
+      'npm',
+      ['run', 'build'],
+      expect.objectContaining({
+        env: expect.objectContaining({ DATADOG_APPS_VERSION_NAME: 'deadbeef' })
+      })
+    )
+  })
+
+  it('defaults version name to empty string when GITHUB_SHA is unset', async () => {
+    delete process.env.GITHUB_SHA
+
+    await run()
+
+    expect(execModule.exec).toHaveBeenCalledWith(
+      'npm',
+      ['run', 'build'],
+      expect.objectContaining({
+        env: expect.objectContaining({ DATADOG_APPS_VERSION_NAME: '' })
+      })
+    )
+  })
+
+  it('uses a custom install command', async () => {
+    core.getInput.mockImplementation((name: string) => {
+      if (name === 'datadog-api-key') return 'test-api-key'
+      if (name === 'datadog-app-key') return 'test-app-key'
+      if (name === 'install-command') return 'yarn install --frozen-lockfile'
+      return ''
+    })
+
+    await run()
+
+    expect(execModule.exec).toHaveBeenCalledWith(
+      'yarn',
+      ['install', '--frozen-lockfile'],
+      expect.any(Object)
+    )
+  })
+
+  it('uses a custom build command', async () => {
+    core.getInput.mockImplementation((name: string) => {
+      if (name === 'datadog-api-key') return 'test-api-key'
+      if (name === 'datadog-app-key') return 'test-app-key'
+      if (name === 'build-command') return 'pnpm build --mode production'
+      return ''
+    })
+
+    await run()
+
+    expect(execModule.exec).toHaveBeenCalledWith(
+      'pnpm',
+      ['build', '--mode', 'production'],
+      expect.any(Object)
+    )
+  })
+
+  it('runs commands in the specified app directory', async () => {
+    core.getInput.mockImplementation((name: string) => {
+      if (name === 'datadog-api-key') return 'test-api-key'
+      if (name === 'datadog-app-key') return 'test-app-key'
+      if (name === 'app-directory') return '/path/to/app'
+      return ''
+    })
+
+    await run()
+
+    expect(execModule.exec).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Array),
+      expect.objectContaining({ cwd: '/path/to/app' })
+    )
+  })
+
+  it('fails when the app directory does not exist', async () => {
+    core.getInput.mockImplementation((name: string) => {
+      if (name === 'datadog-api-key') return 'test-api-key'
+      if (name === 'datadog-app-key') return 'test-app-key'
+      if (name === 'app-directory') return '/nonexistent/dir'
+      return ''
+    })
+    mockExistsSync.mockReturnValue(false)
+
+    await run()
+
+    expect(core.setFailed).toHaveBeenCalledWith(
+      "App directory '/nonexistent/dir' does not exist"
+    )
+    expect(execModule.exec).not.toHaveBeenCalled()
+  })
+
+  it('fails when the install command exits with an error', async () => {
+    execModule.exec.mockRejectedValueOnce(new Error('npm ci failed'))
+
+    await run()
+
+    expect(core.setFailed).toHaveBeenCalledWith('npm ci failed')
+  })
+
+  it('fails when the build command exits with an error', async () => {
+    execModule.exec
+      .mockResolvedValueOnce(0)
+      .mockRejectedValueOnce(new Error('build script failed'))
+
+    await run()
+
+    expect(core.setFailed).toHaveBeenCalledWith('build script failed')
+  })
+
+  it('does not call setFailed on a successful run', async () => {
+    await run()
+
+    expect(core.setFailed).not.toHaveBeenCalled()
   })
 })
