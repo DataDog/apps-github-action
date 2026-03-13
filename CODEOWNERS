@@ -1,0 +1,5 @@
+# Default owners, unless a later match takes precedence.
+* @DataDog/app-builder-high-code
+
+# Documentation
+*README.md @DataDog/documentation @DataDog/app-builder-high-code

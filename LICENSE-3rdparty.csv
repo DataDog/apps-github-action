@@ -1,0 +1,26 @@
+Component,Origin,Licence,Copyright
+@actions/core,npm,MIT,Copyright 2019 GitHub
+@actions/exec,npm,MIT,Copyright 2019 GitHub
+@eslint/compat,npm,Apache-2.0,
+@github/local-action,npm,MIT,Copyright GitHub
+@jest/globals,npm,MIT,Copyright (c) Meta Platforms Inc. and affiliates.
+@rollup/plugin-commonjs,npm,MIT,Copyright (c) 2019 RollupJS Plugin Contributors (https://github.com/rollup/plugins/graphs/contributors)
+@rollup/plugin-node-resolve,npm,MIT,Copyright (c) 2019 RollupJS Plugin Contributors (https://github.com/rollup/plugins/graphs/contributors)
+@rollup/plugin-typescript,npm,MIT,Copyright (c) 2019 RollupJS Plugin Contributors (https://github.com/rollup/plugins/graphs/contributors)
+@rollup/rollup-linux-x64-gnu,npm,MIT,
+@types/jest,npm,MIT,
+@types/node,npm,MIT,
+@typescript-eslint/eslint-plugin,npm,MIT,Copyright (c) 2019 typescript-eslint and other contributors
+@typescript-eslint/parser,npm,MIT,Copyright (c) 2019 typescript-eslint and other contributors
+eslint,npm,MIT,"Copyright OpenJS Foundation and other contributors, <www.openjsf.org>"
+eslint-config-prettier,npm,MIT,"Copyright (c) 2017, 2018, 2019, 2020, 2021, 2022, 2023 Simon Lydell and contributors"
+eslint-import-resolver-typescript,npm,ISC,Copyright 2021 Alex Gorbatchev <alex.gorbatchev@gmail.com>
+eslint-plugin-import,npm,MIT,Copyright (c) 2015 Ben Mosher
+eslint-plugin-jest,npm,MIT,Copyright (c) 2018 Jonathan Kim
+eslint-plugin-prettier,npm,MIT,Copyright © 2017 Andres Suarez and Teddy Katz
+jest,npm,MIT,Copyright (c) Meta Platforms Inc. and affiliates.
+prettier,npm,MIT,Copyright © James Long and contributors
+rollup,npm,MIT,Copyright (c) 2017 the Rollup contributors
+ts-jest,npm,MIT,Copyright (c) 2016-2025
+ts-jest-resolver,npm,MIT,Copyright (c) 2021 Vitor Luiz Cavalcanti
+typescript,npm,Apache-2.0,

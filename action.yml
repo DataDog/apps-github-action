@@ -1,0 +1,38 @@
+name: Datadog Apps Deploy
+description: Build and deploy Vite apps to Datadog
+author: Datadog
+
+# Add your action's branding here. This will appear on the GitHub Marketplace.
+branding:
+  icon: upload-cloud
+  color: purple
+
+# Define your inputs here.
+inputs:
+  datadog-api-key:
+    description: Datadog API key
+    required: true
+  datadog-app-key:
+    description: Datadog App key
+    required: true
+  app-directory:
+    description: Root directory of the app
+    required: false
+    default: '.'
+  install-command:
+    description: Command to install dependencies before building
+    required: false
+    default: npm ci
+  build-command:
+    description: Command to build the Vite app
+    required: false
+    default: npm run build
+  deploy:
+    description:
+      Whether to deploy and publish the app. When false, the app will be
+      deployed but not published.
+    required: false
+    default: 'true'
+runs:
+  using: node24
+  main: dist/index.js
