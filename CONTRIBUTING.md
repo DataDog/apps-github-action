@@ -27,6 +27,20 @@ npm bundle
 npm run all
 ```
 
+## Source Code Headers
+
+All source files must have the Apache 2.0 header, you can add this manually or
+by using [SkyWalking Eyes]:
+
+```shellsession
+% brew install license-eye
+% license-eye header fix
+```
+
+This lint can be configured in `.licenserc.yaml` to skip specific files.
+
+[SkyWalking Eyes]: https://github.com/apache/skywalking-eyes
+
 ## Submitting pull requests
 
 Have you fixed a bug or written a new feature and want to share it? Many thanks!
