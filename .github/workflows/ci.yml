@@ -1,0 +1,74 @@
+# Copyright 2026-Present Datadog, Inc
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  # All source code must have the Apache 2.0 header at the top.
+  check-headers:
+    name: Check Apache License Headers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      # https://github.com/apache/skywalking-eyes
+      - name: Check Apache license headers
+        uses: apache/skywalking-eyes/header@61275cc80d0798a405cb070f7d3a8aaf7cf2c2c1
+        with:
+          mode: check
+
+  test-typescript:
+    name: TypeScript Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Setup Node.js
+        id: setup-node
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install Dependencies
+        id: npm-ci
+        run: npm ci
+
+      - name: Check Format
+        id: npm-format-check
+        run: npm run format:check
+
+      - name: Lint
+        id: npm-lint
+        run: npm run lint
+
+      - name: Test
+        id: npm-ci-test
+        run: npm run ci-test
