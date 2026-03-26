@@ -24,6 +24,8 @@ updates:
           - minor
           - patch
 
+    cooldown:
+      default-days: 2
   - package-ecosystem: npm
     directory: /
     schedule:
@@ -38,3 +40,5 @@ updates:
         dependency-type: production
         update-types:
           - patch
+    cooldown:
+      default-days: 2
