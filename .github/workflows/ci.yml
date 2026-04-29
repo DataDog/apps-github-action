@@ -16,11 +16,10 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches:
-      - main
   push:
     branches:
       - main
+      - 'mq-working-branch-*'
 
 permissions:
   contents: read
