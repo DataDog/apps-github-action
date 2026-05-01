@@ -220,23 +220,4 @@ describe('run()', () => {
 
     expect(core.setFailed).not.toHaveBeenCalled();
   });
-
-  it('sets DATADOG_APPS_VERSION_NAME to empty string when publish is false', async () => {
-    core.getInput.mockImplementation((name: string) => {
-      if (name === 'datadog-api-key') return 'test-api-key';
-      if (name === 'datadog-app-key') return 'test-app-key';
-      if (name === 'publish') return 'false';
-      return '';
-    });
-
-    await run();
-
-    expect(execModule.exec).toHaveBeenCalledWith(
-      'npm',
-      ['run', 'build'],
-      expect.objectContaining({
-        env: expect.objectContaining({ DATADOG_APPS_VERSION_NAME: '' })
-      })
-    );
-  });
 });

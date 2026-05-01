@@ -85,46 +85,6 @@ jobs:
           app-directory: path/to/your/app
 ```
 
-### Deploy a preview on pull requests
-
-Only use this workflow on trusted, private repositories, as it could enable
-external contributors to obtain your Datadog keys from GitHub Actions by opening
-a PR with malicious code.
-
-```yaml
-name: Preview Deployment
-on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-
-permissions:
-  contents: read
-
-jobs:
-  deploy-preview:
-    name: Deploy Datadog App Preview
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        id: setup-node
-        uses: actions/setup-node@v6
-
-      - name: Deploy Preview
-        id: preview
-        uses: DataDog/apps-github-action
-        with:
-          datadog-api-key: ${{ secrets.DATADOG_API_KEY }}
-          datadog-app-key: ${{ secrets.DATADOG_APP_KEY }}
-          publish: false
-```
-
 ## Inputs
 
 | Input             | Description                                                                                                                                                                                                                                      | Required | Default         |
@@ -134,7 +94,6 @@ jobs:
 | `app-directory`   | The path to your Datadog App's root directory                                                                                                                                                                                                    | No       | `.`             |
 | `install-command` | Command to install dependencies before building                                                                                                                                                                                                  | No       | `npm ci`        |
 | `build-command`   | Command to build the Vite app                                                                                                                                                                                                                    | No       | `npm run build` |
-| `publish`         | Whether to deploy and publish the app. When `false`, the app will be deployed but not published                                                                                                                                                  | No       | `true`          |
 
 ## Contributing
 

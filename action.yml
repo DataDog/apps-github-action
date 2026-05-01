@@ -41,12 +41,6 @@ inputs:
     description: Command to build the Vite app
     required: false
     default: npm run build
-  deploy:
-    description:
-      Whether to deploy and publish the app. When false, the app will be
-      deployed but not published
-    required: false
-    default: 'true'
 runs:
   using: node24
   main: dist/index.js

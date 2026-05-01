@@ -61,12 +61,9 @@ export async function run(): Promise<void> {
     }
 
     // Step 2: Build the Vite app (with upload)
-    const publish: boolean = core.getInput('publish').toLowerCase() !== 'false';
-    const gitSha = publish ? process.env.GITHUB_SHA || '' : '';
+    const gitSha = process.env.GITHUB_SHA || '';
     core.info(`Building Vite app with command: ${buildCommand}`);
-    if (publish) {
-      core.info(`Git commit SHA: ${gitSha}`);
-    }
+    core.info(`Git commit SHA: ${gitSha}`);
 
     const buildArgs = buildCommand.split(' ');
     const buildCmd = buildArgs[0];
@@ -83,9 +80,7 @@ export async function run(): Promise<void> {
       }
     });
     core.info('✓ Build and upload completed successfully');
-    if (publish) {
-      core.info(`✓ Your app has been deployed to Datadog! 🎉`);
-    }
+    core.info(`✓ Your app has been deployed to Datadog! 🎉`);
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message);
