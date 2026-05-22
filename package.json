@@ -1,7 +1,7 @@
 {
   "name": "apps-github-action",
   "description": "GitHub Actions to deploy Datadog Apps",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "Datadog",
   "type": "module",
   "private": true,
@@ -49,7 +49,7 @@
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.3.0",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.6.2",
+    "@types/node": "^25.9.1",
     "@typescript-eslint/eslint-plugin": "^8.59.2",
     "@typescript-eslint/parser": "^8.57.0",
     "eslint": "^9.39.3",
