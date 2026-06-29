@@ -67,5 +67,52 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "*"
+  },
+  "overrides": {
+    "@github/local-action": {
+      "undici": "^7.27.2"
+    },
+    "eslint": {
+      "js-yaml": "^4.2.0"
+    },
+    "@jest/globals": {
+      "picomatch": "^4.0.4"
+    },
+    "jest": {
+      "picomatch": "^4.0.4"
+    },
+    "ts-jest": {
+      "picomatch": "^4.0.4"
+    },
+    "glob": {
+      "brace-expansion": "^2.0.3"
+    },
+    "readdir-glob": {
+      "brace-expansion": "^2.0.3"
+    },
+    "@rollup/plugin-commonjs": {
+      "picomatch": "^4.0.4"
+    },
+    "@rollup/plugin-node-resolve": {
+      "picomatch": "^4.0.4"
+    },
+    "@rollup/plugin-typescript": {
+      "picomatch": "^4.0.4"
+    },
+    "@types/jest": {
+      "picomatch": "^4.0.4"
+    },
+    "@typescript-eslint/eslint-plugin": {
+      "picomatch": "^4.0.4"
+    },
+    "@typescript-eslint/parser": {
+      "picomatch": "^4.0.4"
+    },
+    "eslint-import-resolver-typescript": {
+      "picomatch": "^4.0.4"
+    },
+    "eslint-plugin-jest": {
+      "picomatch": "^4.0.4"
+    }
   }
 }
