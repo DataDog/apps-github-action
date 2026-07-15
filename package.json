@@ -67,5 +67,28 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "*"
+  },
+  "overrides": {
+    "@github/local-action": {
+      "undici": "^7.28.0"
+    },
+    "eslint": {
+      "js-yaml": "^4.3.0"
+    },
+    "glob": {
+      "brace-expansion": "^2.0.3"
+    },
+    "readdir-glob": {
+      "brace-expansion": "^2.0.3"
+    },
+    "anymatch": {
+      "picomatch": "^2.3.2"
+    },
+    "micromatch": {
+      "picomatch": "^2.3.2"
+    },
+    "ts-jest-resolver": {
+      "picomatch": "^2.3.2"
+    }
   }
 }
