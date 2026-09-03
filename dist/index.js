@@ -28840,13 +28840,17 @@ function hasCliDependency(appDirectory) {
     }
     try {
         const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-        return Boolean(packageJson.dependencies?.[CLI_PACKAGE_NAME] ||
-            packageJson.devDependencies?.[CLI_PACKAGE_NAME] ||
-            packageJson.optionalDependencies?.[CLI_PACKAGE_NAME]);
+        // Property presence, not the value: an empty version range is a valid
+        // npm dependency (equivalent to `*`) and must still select the project CLI.
+        return [
+            packageJson.dependencies,
+            packageJson.devDependencies,
+            packageJson.optionalDependencies
+        ].some((section) => section !== undefined && Object.hasOwn(section, CLI_PACKAGE_NAME));
     }
     catch {
-        // A malformed package.json fails the install command with a clearer
-        // error; treat it as no CLI dependency and fall back to a global install.
+        // Treat an unreadable or malformed package.json as having no CLI
+        // dependency, and fall back to a global install.
         return false;
     }
 }

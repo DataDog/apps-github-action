@@ -191,6 +191,26 @@ describe('run()', () => {
     ]);
   });
 
+  it('uses the project CLI dependency when its version range is empty', async () => {
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        devDependencies: { '@datadog/apps-cli': '' }
+      })
+    );
+
+    await run();
+
+    expect(execModule.exec).toHaveBeenCalledTimes(2);
+    const deployCall = execModule.exec.mock.calls[1];
+    expect(deployCall[0]).toBe('npx');
+    expect(deployCall[1]).toEqual([
+      'datadog-apps',
+      'deploy',
+      '--version-name',
+      'abc123sha'
+    ]);
+  });
+
   it('ignores the cli-version input when the project pins the CLI', async () => {
     core.getInput.mockImplementation((name: string) => {
       if (name === 'datadog-api-key') return 'test-api-key';
