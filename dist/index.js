@@ -28824,6 +28824,32 @@ function info(message) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** The npm package name of the Datadog Apps CLI. */
+const CLI_PACKAGE_NAME = '@datadog/apps-cli';
+/**
+ * Whether the project already depends on @datadog/apps-cli, so the action can
+ * run that pinned version instead of installing one globally.
+ *
+ * @param appDirectory Root directory of the app
+ * @returns True when the app's package.json lists the CLI as a dependency.
+ */
+function hasCliDependency(appDirectory) {
+    const packageJsonPath = path.join(appDirectory, 'package.json');
+    if (!fs.existsSync(packageJsonPath)) {
+        return false;
+    }
+    try {
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        return Boolean(packageJson.dependencies?.[CLI_PACKAGE_NAME] ||
+            packageJson.devDependencies?.[CLI_PACKAGE_NAME] ||
+            packageJson.optionalDependencies?.[CLI_PACKAGE_NAME]);
+    }
+    catch {
+        // A malformed package.json fails the install command with a clearer
+        // error; treat it as no CLI dependency and fall back to a global install.
+        return false;
+    }
+}
 /**
  * The main function for the action.
  *
@@ -28858,19 +28884,12 @@ async function run() {
             await exec(installCmd, installCmdArgs, { cwd: appDirectory });
             info('✓ Dependencies installed successfully');
         }
-        // Step 2: Install the Datadog Apps CLI, which builds, uploads, and
-        // publishes the app. The build plugins no longer upload on their own.
-        info(`Installing @datadog/apps-cli@${cliVersion}`);
-        await exec('npm', [
-            'install',
-            '--global',
-            `@datadog/apps-cli@${cliVersion}`
-        ]);
-        info('✓ @datadog/apps-cli installed successfully');
-        // Step 3: Build, upload, and publish the app with the CLI. The CLI runs
-        // the project's `build` script itself, so there is no separate build step.
-        // Every option is passed as a CLI flag; only the API and app keys go
-        // through the environment, which is where the CLI reads them from.
+        // Step 2: Build, upload, and publish the app with the CLI, which owns the
+        // whole deployment now that the build plugins no longer upload. When the
+        // project already depends on @datadog/apps-cli, run that pinned version
+        // through npx; otherwise install the CLI globally with the cli-version
+        // input. Every option is passed as a CLI flag; only the API and app keys
+        // go through the environment, which is where the CLI reads them from.
         const gitSha = process.env.GITHUB_SHA || '';
         const deployArgs = ['deploy'];
         if (datadogSite) {
@@ -28879,8 +28898,23 @@ async function run() {
         if (gitSha) {
             deployArgs.push('--version-name', gitSha);
         }
+        let deployCommand = 'datadog-apps';
+        if (hasCliDependency(appDirectory)) {
+            deployCommand = 'npx';
+            deployArgs.unshift('datadog-apps');
+            info(`✓ ${CLI_PACKAGE_NAME} found in the project dependencies; running that version with npx`);
+        }
+        else {
+            info(`Installing ${CLI_PACKAGE_NAME}@${cliVersion}`);
+            await exec('npm', [
+                'install',
+                '--global',
+                `${CLI_PACKAGE_NAME}@${cliVersion}`
+            ]);
+            info(`✓ ${CLI_PACKAGE_NAME} installed successfully`);
+        }
         info(`Deploying Datadog App (version name: ${gitSha})`);
-        await exec('datadog-apps', deployArgs, {
+        await exec(deployCommand, deployArgs, {
             cwd: appDirectory,
             env: {
                 ...process.env,

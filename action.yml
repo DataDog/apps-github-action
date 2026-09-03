@@ -45,7 +45,10 @@ inputs:
     required: false
     default: ''
   cli-version:
-    description: Version of @datadog/apps-cli to install
+    description: >-
+      Version of @datadog/apps-cli to install. Ignored when the app's
+      package.json already lists @datadog/apps-cli as a dependency; that version
+      runs instead, through npx.
     required: false
     default: latest
 runs:

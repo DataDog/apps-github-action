@@ -87,14 +87,18 @@ jobs:
 
 ## How It Works
 
-The action installs your app's dependencies, installs the
-[Datadog Apps CLI](https://www.npmjs.com/package/@datadog/apps-cli), and runs
-`datadog-apps deploy` in your app's directory. The CLI builds the app by running
-the project's `build` script with the project's own package manager, then
-uploads and publishes the built app to Datadog. Every option the action supplies
-— the site and the version name (the commit SHA, `GITHUB_SHA`) — is passed to
-the CLI as a command-line flag. Only the API and app keys are passed through the
-environment, which is where the CLI reads them from.
+The action installs your app's dependencies, then builds, uploads, and publishes
+the app with the
+[Datadog Apps CLI](https://www.npmjs.com/package/@datadog/apps-cli) by running
+`datadog-apps deploy` in your app's directory. When your app's package.json
+already lists `@datadog/apps-cli` as a dependency, that version runs through
+`npx`. Otherwise, the CLI is installed globally, with the version from the
+`cli-version` input. The CLI builds the app by running the project's `build`
+script with the project's own package manager, then uploads and publishes the
+built app to Datadog. Every option the action supplies — the site and the
+version name (the commit SHA, `GITHUB_SHA`) — is passed to the CLI as a
+command-line flag. Only the API and app keys are passed through the environment,
+which is where the CLI reads them from.
 
 ## Inputs
 
@@ -105,7 +109,7 @@ environment, which is where the CLI reads them from.
 | `app-directory`   | The path to your Datadog App's root directory                                                                                                                                                                                               | No       | `.`      |
 | `install-command` | Command to install dependencies before deploying                                                                                                                                                                                            | No       | `npm ci` |
 | `datadog-site`    | Datadog site to deploy to (for example, `datadoghq.eu`). When not set, the CLI resolves the site from the `DD_SITE` or `DATADOG_SITE` environment variable, or the `datadogSite` field of the app's `datadog-app.config.json`               | No       |          |
-| `cli-version`     | Version of `@datadog/apps-cli` to install                                                                                                                                                                                                   | No       | `latest` |
+| `cli-version`     | Version of `@datadog/apps-cli` to install. Ignored when the app's `package.json` already lists `@datadog/apps-cli` as a dependency — that version runs instead, through `npx`                                                               | No       | `latest` |
 
 ## Contributing
 
