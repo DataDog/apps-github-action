@@ -95,12 +95,23 @@ export async function run(): Promise<void> {
 
     // Step 2: Build, upload, and publish the app with the CLI, which owns the
     // whole deployment now that the build plugins no longer upload. When the
-    // project has @datadog/apps-cli installed, run that version through npx;
-    // otherwise install the CLI globally with the cli-version input. Every
+    // project has @datadog/apps-cli installed, npx runs that version;
+    // otherwise it fetches the version from the cli-version input into the
+    // runner user's npx cache — no global install, so no write access to
+    // npm's global prefix and no mutation of shared runner state. Every
     // option is passed as a CLI flag; only the API and app keys go through
     // the environment, which is where the CLI reads them from.
     const gitSha = process.env.GITHUB_SHA || '';
-    const deployArgs = ['deploy'];
+    const deployArgs = ['--yes'];
+    if (findLocalCliBin(appDirectory)) {
+      core.info(
+        `✓ Project ${CLI_PACKAGE_NAME} found; running that version with npx`
+      );
+    } else {
+      deployArgs.push('--package', `${CLI_PACKAGE_NAME}@${cliVersion}`);
+      core.info(`Running ${CLI_PACKAGE_NAME}@${cliVersion} with npx`);
+    }
+    deployArgs.push('datadog-apps', 'deploy');
     if (datadogSite) {
       deployArgs.push('--site', datadogSite);
     }
@@ -108,25 +119,8 @@ export async function run(): Promise<void> {
       deployArgs.push('--version-name', gitSha);
     }
 
-    let deployCommand = 'datadog-apps';
-    if (findLocalCliBin(appDirectory)) {
-      deployCommand = 'npx';
-      deployArgs.unshift('datadog-apps');
-      core.info(
-        `✓ Project ${CLI_PACKAGE_NAME} found; running that version with npx`
-      );
-    } else {
-      core.info(`Installing ${CLI_PACKAGE_NAME}@${cliVersion}`);
-      await exec.exec('npm', [
-        'install',
-        '--global',
-        `${CLI_PACKAGE_NAME}@${cliVersion}`
-      ]);
-      core.info(`✓ ${CLI_PACKAGE_NAME} installed successfully`);
-    }
-
     core.info(`Deploying Datadog App (version name: ${gitSha})`);
-    await exec.exec(deployCommand, deployArgs, {
+    await exec.exec('npx', deployArgs, {
       cwd: appDirectory,
       env: {
         ...process.env,

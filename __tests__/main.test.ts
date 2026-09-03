@@ -47,8 +47,8 @@ describe('run()', () => {
       return '';
     });
     // By default nothing exists inside node_modules, so the local CLI
-    // binary is absent and tests exercise the global-install path;
-    // npx tests override this.
+    // binary is absent and tests exercise the pinned-package npx path;
+    // tests for the installed-CLI path override this.
     mockExistsSync.mockImplementation(
       (p: fs.PathLike) => !String(p).includes('node_modules')
     );
@@ -79,30 +79,31 @@ describe('run()', () => {
     expect(core.setSecret).toHaveBeenCalledWith('test-app-key');
   });
 
-  it('runs the install command, installs the CLI, then deploys', async () => {
+  it('runs the install command, then deploys through npx', async () => {
     await run();
 
-    expect(execModule.exec).toHaveBeenCalledTimes(3);
-    const [installCall, cliInstallCall, deployCall] =
-      execModule.exec.mock.calls;
+    expect(execModule.exec).toHaveBeenCalledTimes(2);
+    const [installCall, deployCall] = execModule.exec.mock.calls;
     expect(installCall[0]).toBe('npm');
     expect(installCall[1]).toEqual(['ci']);
-    expect(cliInstallCall[0]).toBe('npm');
-    expect(cliInstallCall[1]).toEqual([
-      'install',
-      '--global',
-      '@datadog/apps-cli@latest'
+    expect(deployCall[0]).toBe('npx');
+    expect(deployCall[1]).toEqual([
+      '--yes',
+      '--package',
+      '@datadog/apps-cli@latest',
+      'datadog-apps',
+      'deploy',
+      '--version-name',
+      'abc123sha'
     ]);
-    expect(deployCall[0]).toBe('datadog-apps');
-    expect(deployCall[1]).toEqual(['deploy', '--version-name', 'abc123sha']);
   });
 
   it('passes only the Datadog credentials through the environment', async () => {
     await run();
 
     expect(execModule.exec).toHaveBeenCalledWith(
-      'datadog-apps',
-      ['deploy', '--version-name', 'abc123sha'],
+      'npx',
+      expect.any(Array),
       expect.objectContaining({
         env: expect.objectContaining({
           DATADOG_API_KEY: 'test-api-key',
@@ -110,7 +111,7 @@ describe('run()', () => {
         })
       })
     );
-    const deployEnv = execModule.exec.mock.calls[2][2]?.env ?? {};
+    const deployEnv = execModule.exec.mock.calls[1][2]?.env ?? {};
     expect(deployEnv).not.toHaveProperty('DATADOG_APPS_VERSION_NAME');
   });
 
@@ -119,11 +120,9 @@ describe('run()', () => {
 
     await run();
 
-    expect(execModule.exec).toHaveBeenCalledWith(
-      'datadog-apps',
-      ['deploy', '--version-name', 'deadbeef'],
-      expect.any(Object)
-    );
+    const deployCall = execModule.exec.mock.calls[1];
+    expect(deployCall[1]).toContain('--version-name');
+    expect(deployCall[1]).toContain('deadbeef');
   });
 
   it('omits --version-name when GITHUB_SHA is unset', async () => {
@@ -131,8 +130,14 @@ describe('run()', () => {
 
     await run();
 
-    const deployCall = execModule.exec.mock.calls[2];
-    expect(deployCall[1]).toEqual(['deploy']);
+    const deployCall = execModule.exec.mock.calls[1];
+    expect(deployCall[1]).toEqual([
+      '--yes',
+      '--package',
+      '@datadog/apps-cli@latest',
+      'datadog-apps',
+      'deploy'
+    ]);
   });
 
   it('uses a custom install command', async () => {
@@ -152,7 +157,7 @@ describe('run()', () => {
     );
   });
 
-  it('installs a pinned CLI version when cli-version is set', async () => {
+  it('runs a pinned CLI version when cli-version is set', async () => {
     core.getInput.mockImplementation((name: string) => {
       if (name === 'datadog-api-key') return 'test-api-key';
       if (name === 'datadog-app-key') return 'test-app-key';
@@ -162,14 +167,12 @@ describe('run()', () => {
 
     await run();
 
-    expect(execModule.exec).toHaveBeenCalledWith('npm', [
-      'install',
-      '--global',
-      '@datadog/apps-cli@0.0.1'
-    ]);
+    const deployCall = execModule.exec.mock.calls[1];
+    expect(deployCall[1]).toContain('--package');
+    expect(deployCall[1]).toContain('@datadog/apps-cli@0.0.1');
   });
 
-  it('runs the installed project CLI via npx', async () => {
+  it('runs the installed project CLI via npx without --package', async () => {
     mockExistsSync.mockImplementation(() => true);
 
     await run();
@@ -180,6 +183,7 @@ describe('run()', () => {
     expect(installCall[1]).toEqual(['ci']);
     expect(deployCall[0]).toBe('npx');
     expect(deployCall[1]).toEqual([
+      '--yes',
       'datadog-apps',
       'deploy',
       '--version-name',
@@ -202,10 +206,10 @@ describe('run()', () => {
 
     await run();
 
-    expect(execModule.exec).toHaveBeenCalledTimes(2);
     const deployCall = execModule.exec.mock.calls[1];
     expect(deployCall[0]).toBe('npx');
     expect(deployCall[1]).toEqual([
+      '--yes',
       'datadog-apps',
       'deploy',
       '--version-name',
@@ -227,25 +231,9 @@ describe('run()', () => {
 
     await run();
 
-    expect(execModule.exec).toHaveBeenCalledTimes(2);
-    expect(execModule.exec).not.toHaveBeenCalledWith(
-      'npm',
-      expect.arrayContaining(['--global']),
-      expect.anything()
-    );
-  });
-
-  it('falls back to a global install when the CLI binary is missing', async () => {
-    // For example a package.json that lists the CLI while the install
-    // command ran with --omit=dev: the binary never lands in node_modules.
-    await run();
-
-    expect(execModule.exec).toHaveBeenCalledTimes(3);
-    expect(execModule.exec).toHaveBeenCalledWith('npm', [
-      'install',
-      '--global',
-      '@datadog/apps-cli@latest'
-    ]);
+    const deployCall = execModule.exec.mock.calls[1];
+    expect(deployCall[1]).not.toContain('--package');
+    expect(deployCall[1]).not.toContain('@datadog/apps-cli@0.0.1');
   });
 
   it('passes the datadog-site input as --site to the deploy command', async () => {
@@ -258,21 +246,19 @@ describe('run()', () => {
 
     await run();
 
-    expect(execModule.exec).toHaveBeenCalledWith(
-      'datadog-apps',
-      ['deploy', '--site', 'datadoghq.eu', '--version-name', 'abc123sha'],
-      expect.any(Object)
-    );
+    const deployCall = execModule.exec.mock.calls[1];
+    expect(deployCall[1]).toContain('--site');
+    expect(deployCall[1]).toContain('datadoghq.eu');
   });
 
   it('omits --site when the datadog-site input is not set', async () => {
     await run();
 
-    const deployCall = execModule.exec.mock.calls[2];
-    expect(deployCall[1]).toEqual(['deploy', '--version-name', 'abc123sha']);
+    const deployCall = execModule.exec.mock.calls[1];
+    expect(deployCall[1]).not.toContain('--site');
   });
 
-  it('runs commands in the specified app directory', async () => {
+  it('runs the deploy command in the specified app directory', async () => {
     core.getInput.mockImplementation((name: string) => {
       if (name === 'datadog-api-key') return 'test-api-key';
       if (name === 'datadog-app-key') return 'test-app-key';
@@ -283,8 +269,8 @@ describe('run()', () => {
     await run();
 
     expect(execModule.exec).toHaveBeenCalledWith(
-      'datadog-apps',
-      ['deploy', '--version-name', 'abc123sha'],
+      'npx',
+      expect.any(Array),
       expect.objectContaining({ cwd: '/path/to/app' })
     );
   });
@@ -314,19 +300,8 @@ describe('run()', () => {
     expect(core.setFailed).toHaveBeenCalledWith('npm ci failed');
   });
 
-  it('fails when the CLI installation exits with an error', async () => {
-    execModule.exec
-      .mockResolvedValueOnce(0)
-      .mockRejectedValueOnce(new Error('npm install failed'));
-
-    await run();
-
-    expect(core.setFailed).toHaveBeenCalledWith('npm install failed');
-  });
-
   it('fails when the deploy command exits with an error', async () => {
     execModule.exec
-      .mockResolvedValueOnce(0)
       .mockResolvedValueOnce(0)
       .mockRejectedValueOnce(new Error('deploy failed'));
 
