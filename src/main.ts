@@ -23,35 +23,32 @@ import * as path from 'path';
 const CLI_PACKAGE_NAME = '@datadog/apps-cli';
 
 /**
- * Whether the project already depends on @datadog/apps-cli, so the action can
- * run that pinned version instead of installing one globally.
+ * Path to the `datadog-apps` binary when the project has the CLI installed,
+ * or undefined. Searches `node_modules/.bin` upward from the app directory,
+ * the same way npx itself resolves binaries.
+ *
+ * Checking the binary rather than package.json matters: a custom install
+ * command can skip the section that lists the CLI (for example,
+ * `npm ci --omit=dev`), and bare `npx datadog-apps` would then fetch the
+ * unrelated registry package `datadog-apps` instead of failing.
  *
  * @param appDirectory Root directory of the app
- * @returns True when the app's package.json lists the CLI as a dependency.
+ * @returns Absolute path to the installed binary, or undefined.
  */
-function hasCliDependency(appDirectory: string): boolean {
-  const packageJsonPath = path.join(appDirectory, 'package.json');
-  if (!fs.existsSync(packageJsonPath)) {
-    return false;
-  }
-  try {
-    const packageJson = JSON.parse(
-      fs.readFileSync(packageJsonPath, 'utf8')
-    ) as Record<string, Record<string, string> | undefined>;
-    // Property presence, not the value: an empty version range is a valid
-    // npm dependency (equivalent to `*`) and must still select the project CLI.
-    return [
-      packageJson.dependencies,
-      packageJson.devDependencies,
-      packageJson.optionalDependencies
-    ].some(
-      (section) =>
-        section !== undefined && Object.hasOwn(section, CLI_PACKAGE_NAME)
-    );
-  } catch {
-    // Treat an unreadable or malformed package.json as having no CLI
-    // dependency, and fall back to a global install.
-    return false;
+function findLocalCliBin(appDirectory: string): string | undefined {
+  for (
+    let directory = path.resolve(appDirectory);
+    ;
+    directory = path.dirname(directory)
+  ) {
+    const bin = path.join(directory, 'node_modules', '.bin', 'datadog-apps');
+    if (fs.existsSync(bin)) {
+      return bin;
+    }
+    const parent = path.dirname(directory);
+    if (parent === directory) {
+      return undefined;
+    }
   }
 }
 
@@ -98,10 +95,10 @@ export async function run(): Promise<void> {
 
     // Step 2: Build, upload, and publish the app with the CLI, which owns the
     // whole deployment now that the build plugins no longer upload. When the
-    // project already depends on @datadog/apps-cli, run that pinned version
-    // through npx; otherwise install the CLI globally with the cli-version
-    // input. Every option is passed as a CLI flag; only the API and app keys
-    // go through the environment, which is where the CLI reads them from.
+    // project has @datadog/apps-cli installed, run that version through npx;
+    // otherwise install the CLI globally with the cli-version input. Every
+    // option is passed as a CLI flag; only the API and app keys go through
+    // the environment, which is where the CLI reads them from.
     const gitSha = process.env.GITHUB_SHA || '';
     const deployArgs = ['deploy'];
     if (datadogSite) {
@@ -112,11 +109,11 @@ export async function run(): Promise<void> {
     }
 
     let deployCommand = 'datadog-apps';
-    if (hasCliDependency(appDirectory)) {
+    if (findLocalCliBin(appDirectory)) {
       deployCommand = 'npx';
       deployArgs.unshift('datadog-apps');
       core.info(
-        `✓ ${CLI_PACKAGE_NAME} found in the project dependencies; running that version with npx`
+        `✓ Project ${CLI_PACKAGE_NAME} found; running that version with npx`
       );
     } else {
       core.info(`Installing ${CLI_PACKAGE_NAME}@${cliVersion}`);

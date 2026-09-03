@@ -27,12 +27,10 @@ import * as execModule from '../__fixtures__/exec.js';
 import type * as fs from 'fs';
 
 const mockExistsSync = jest.fn<typeof fs.existsSync>();
-const mockReadFileSync = jest.fn<typeof fs.readFileSync>();
 
 // Mocks should be declared before the module being tested is imported.
 jest.unstable_mockModule('fs', () => ({
-  existsSync: mockExistsSync,
-  readFileSync: mockReadFileSync
+  existsSync: mockExistsSync
 }));
 jest.unstable_mockModule('@actions/core', () => core);
 jest.unstable_mockModule('@actions/exec', () => execModule);
@@ -48,10 +46,12 @@ describe('run()', () => {
       if (name === 'datadog-app-key') return 'test-app-key';
       return '';
     });
-    mockExistsSync.mockReturnValue(true);
-    // A package.json without the CLI as a dependency by default, so tests
-    // exercise the global-install path unless they say otherwise.
-    mockReadFileSync.mockReturnValue('{}');
+    // By default nothing exists inside node_modules, so the local CLI
+    // binary is absent and tests exercise the global-install path;
+    // npx tests override this.
+    mockExistsSync.mockImplementation(
+      (p: fs.PathLike) => !String(p).includes('node_modules')
+    );
     execModule.exec.mockResolvedValue(0);
     process.env.GITHUB_SHA = 'abc123sha';
   });
@@ -169,12 +169,8 @@ describe('run()', () => {
     ]);
   });
 
-  it('uses the project CLI dependency via npx when it is installed', async () => {
-    mockReadFileSync.mockReturnValue(
-      JSON.stringify({
-        devDependencies: { '@datadog/apps-cli': '^0.1.0' }
-      })
-    );
+  it('runs the installed project CLI via npx', async () => {
+    mockExistsSync.mockImplementation(() => true);
 
     await run();
 
@@ -191,11 +187,17 @@ describe('run()', () => {
     ]);
   });
 
-  it('uses the project CLI dependency when its version range is empty', async () => {
-    mockReadFileSync.mockReturnValue(
-      JSON.stringify({
-        devDependencies: { '@datadog/apps-cli': '' }
-      })
+  it('uses a CLI installed above the app directory (monorepo)', async () => {
+    core.getInput.mockImplementation((name: string) => {
+      if (name === 'datadog-api-key') return 'test-api-key';
+      if (name === 'datadog-app-key') return 'test-app-key';
+      if (name === 'app-directory') return '/repo/packages/app';
+      return '';
+    });
+    mockExistsSync.mockImplementation(
+      (p: fs.PathLike) =>
+        p === '/repo/packages/app' ||
+        p === '/repo/node_modules/.bin/datadog-apps'
     );
 
     await run();
@@ -209,20 +211,19 @@ describe('run()', () => {
       '--version-name',
       'abc123sha'
     ]);
+    expect(deployCall[2]).toEqual(
+      expect.objectContaining({ cwd: '/repo/packages/app' })
+    );
   });
 
-  it('ignores the cli-version input when the project pins the CLI', async () => {
+  it('ignores the cli-version input when the project CLI is installed', async () => {
     core.getInput.mockImplementation((name: string) => {
       if (name === 'datadog-api-key') return 'test-api-key';
       if (name === 'datadog-app-key') return 'test-app-key';
       if (name === 'cli-version') return '0.0.1';
       return '';
     });
-    mockReadFileSync.mockReturnValue(
-      JSON.stringify({
-        dependencies: { '@datadog/apps-cli': '0.1.0' }
-      })
-    );
+    mockExistsSync.mockImplementation(() => true);
 
     await run();
 
@@ -234,9 +235,9 @@ describe('run()', () => {
     );
   });
 
-  it('falls back to a global install when package.json is malformed', async () => {
-    mockReadFileSync.mockReturnValue('not valid json');
-
+  it('falls back to a global install when the CLI binary is missing', async () => {
+    // For example a package.json that lists the CLI while the install
+    // command ran with --omit=dev: the binary never lands in node_modules.
     await run();
 
     expect(execModule.exec).toHaveBeenCalledTimes(3);
