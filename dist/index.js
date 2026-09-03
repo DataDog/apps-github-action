@@ -28842,13 +28842,14 @@ async function run() {
         setSecret(datadogAppKey);
         const appDirectory = path.resolve(getInput('app-directory') || '.');
         const installCommand = getInput('install-command') || 'npm ci';
-        const buildCommand = getInput('build-command') || 'npm run build';
+        const datadogSite = getInput('datadog-site');
+        const cliVersion = getInput('cli-version') || 'latest';
         // Verify app directory exists
         if (!fs.existsSync(appDirectory)) {
             throw new Error(`App directory '${appDirectory}' does not exist`);
         }
         info(`✓ App directory found: ${appDirectory}`);
-        // Step 1: Install dependencies (if install command is provided)`
+        // Step 1: Install dependencies (if install command is provided)
         if (installCommand) {
             info(`Installing dependencies with command: ${installCommand}`);
             const installArgs = installCommand.split(' ');
@@ -28857,24 +28858,37 @@ async function run() {
             await exec(installCmd, installCmdArgs, { cwd: appDirectory });
             info('✓ Dependencies installed successfully');
         }
-        // Step 2: Build the Vite app (with upload)
+        // Step 2: Install the Datadog Apps CLI, which builds, uploads, and
+        // publishes the app. The build plugins no longer upload on their own.
+        info(`Installing @datadog/apps-cli@${cliVersion}`);
+        await exec('npm', [
+            'install',
+            '--global',
+            `@datadog/apps-cli@${cliVersion}`
+        ]);
+        info('✓ @datadog/apps-cli installed successfully');
+        // Step 3: Build, upload, and publish the app with the CLI. The CLI runs
+        // the project's `build` script itself, so there is no separate build step.
+        // Every option is passed as a CLI flag; only the API and app keys go
+        // through the environment, which is where the CLI reads them from.
         const gitSha = process.env.GITHUB_SHA || '';
-        info(`Building Vite app with command: ${buildCommand}`);
-        info(`Git commit SHA: ${gitSha}`);
-        const buildArgs = buildCommand.split(' ');
-        const buildCmd = buildArgs[0];
-        const buildCmdArgs = buildArgs.slice(1);
-        await exec(buildCmd, buildCmdArgs, {
+        const deployArgs = ['deploy'];
+        if (datadogSite) {
+            deployArgs.push('--site', datadogSite);
+        }
+        if (gitSha) {
+            deployArgs.push('--version-name', gitSha);
+        }
+        info(`Deploying Datadog App (version name: ${gitSha})`);
+        await exec('datadog-apps', deployArgs, {
             cwd: appDirectory,
             env: {
                 ...process.env,
                 DATADOG_API_KEY: datadogApiKey,
-                DATADOG_APP_KEY: datadogAppKey,
-                DATADOG_APPS_VERSION_NAME: gitSha,
-                DATADOG_APPS_UPLOAD_ASSETS: '1'
+                DATADOG_APP_KEY: datadogAppKey
             }
         });
-        info('✓ Build and upload completed successfully');
+        info('✓ Build, upload, and publish completed successfully');
         info(`✓ Your app has been deployed to Datadog! 🎉`);
     }
     catch (error) {

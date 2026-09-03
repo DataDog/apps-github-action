@@ -34,13 +34,20 @@ inputs:
     required: false
     default: '.'
   install-command:
-    description: Command to install dependencies before building
+    description: Command to install dependencies before deploying
     required: false
     default: npm ci
-  build-command:
-    description: Command to build the Vite app
+  datadog-site:
+    description: >-
+      Datadog site to deploy to (for example, datadoghq.eu). When not set, the
+      CLI resolves the site from the DD_SITE or DATADOG_SITE environment
+      variable, or the datadogSite field of the app's datadog-app.config.json.
     required: false
-    default: npm run build
+    default: ''
+  cli-version:
+    description: Version of @datadog/apps-cli to install
+    required: false
+    default: latest
 runs:
   using: node24
   main: dist/index.js

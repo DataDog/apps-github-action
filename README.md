@@ -85,15 +85,27 @@ jobs:
           app-directory: path/to/your/app
 ```
 
+## How It Works
+
+The action installs your app's dependencies, installs the
+[Datadog Apps CLI](https://www.npmjs.com/package/@datadog/apps-cli), and runs
+`datadog-apps deploy` in your app's directory. The CLI builds the app by running
+the project's `build` script with the project's own package manager, then
+uploads and publishes the built app to Datadog. Every option the action supplies
+— the site and the version name (the commit SHA, `GITHUB_SHA`) — is passed to
+the CLI as a command-line flag. Only the API and app keys are passed through the
+environment, which is where the CLI reads them from.
+
 ## Inputs
 
-| Input             | Description                                                                                                                                                                                                                                      | Required | Default         |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | --------------- |
-| `datadog-api-key` | Your Datadog API key. This key is [created in your Datadog organization](https://docs.datadoghq.com/account_management/api-app-keys/) and should be stored as a [secret](https://docs.github.com/en/actions/reference/encrypted-secrets)         | Yes      |                 |
-| `datadog-app-key` | Your Datadog application key. This key is [created in your Datadog organization](https://docs.datadoghq.com/account_management/api-app-keys/) and should be stored as a [secret](https://docs.github.com/en/actions/reference/encrypted-secrets) | Yes      |                 |
-| `app-directory`   | The path to your Datadog App's root directory                                                                                                                                                                                                    | No       | `.`             |
-| `install-command` | Command to install dependencies before building                                                                                                                                                                                                  | No       | `npm ci`        |
-| `build-command`   | Command to build the Vite app                                                                                                                                                                                                                    | No       | `npm run build` |
+| Input             | Description                                                                                                                                                                                                                                 | Required | Default  |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------- |
+| `datadog-api-key` | Your Datadog API key. This key is [created in your Datadog organization](https://docs.datadoghq.com/account_management/api-app-keys/) and should be stored as a [secret](https://github.com/en/actions/reference/encrypted-secrets)         | Yes      |          |
+| `datadog-app-key` | Your Datadog application key. This key is [created in your Datadog organization](https://docs.datadoghq.com/account_management/api-app-keys/) and should be stored as a [secret](https://github.com/en/actions/reference/encrypted-secrets) | Yes      |          |
+| `app-directory`   | The path to your Datadog App's root directory                                                                                                                                                                                               | No       | `.`      |
+| `install-command` | Command to install dependencies before deploying                                                                                                                                                                                            | No       | `npm ci` |
+| `datadog-site`    | Datadog site to deploy to (for example, `datadoghq.eu`). When not set, the CLI resolves the site from the `DD_SITE` or `DATADOG_SITE` environment variable, or the `datadogSite` field of the app's `datadog-app.config.json`               | No       |          |
+| `cli-version`     | Version of `@datadog/apps-cli` to install                                                                                                                                                                                                   | No       | `latest` |
 
 ## Contributing
 

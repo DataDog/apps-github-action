@@ -24,8 +24,9 @@
 import { jest } from '@jest/globals';
 import * as core from '../__fixtures__/core.js';
 import * as execModule from '../__fixtures__/exec.js';
+import type * as fs from 'fs';
 
-const mockExistsSync = jest.fn<typeof import('fs').existsSync>();
+const mockExistsSync = jest.fn<typeof fs.existsSync>();
 
 // Mocks should be declared before the module being tested is imported.
 jest.unstable_mockModule('fs', () => ({
@@ -34,8 +35,8 @@ jest.unstable_mockModule('fs', () => ({
 jest.unstable_mockModule('@actions/core', () => core);
 jest.unstable_mockModule('@actions/exec', () => execModule);
 
-// The module being tested should be imported dynamically. This ensures that the
-// mocks are used in place of any actual dependencies.
+// The module being tested should be imported dynamically. This ensures
+// that the mocks are used in place of any actual dependencies.
 const { run } = await import('../src/main.js');
 
 describe('run()', () => {
@@ -73,60 +74,60 @@ describe('run()', () => {
     expect(core.setSecret).toHaveBeenCalledWith('test-app-key');
   });
 
-  it('runs the install command before the build command', async () => {
+  it('runs the install command, installs the CLI, then deploys', async () => {
     await run();
 
-    expect(execModule.exec).toHaveBeenCalledTimes(2);
-    const [firstCall, secondCall] = execModule.exec.mock.calls;
-    expect(firstCall[0]).toBe('npm');
-    expect(firstCall[1]).toEqual(['ci']);
-    expect(secondCall[0]).toBe('npm');
-    expect(secondCall[1]).toEqual(['run', 'build']);
+    expect(execModule.exec).toHaveBeenCalledTimes(3);
+    const [installCall, cliInstallCall, deployCall] =
+      execModule.exec.mock.calls;
+    expect(installCall[0]).toBe('npm');
+    expect(installCall[1]).toEqual(['ci']);
+    expect(cliInstallCall[0]).toBe('npm');
+    expect(cliInstallCall[1]).toEqual([
+      'install',
+      '--global',
+      '@datadog/apps-cli@latest'
+    ]);
+    expect(deployCall[0]).toBe('datadog-apps');
+    expect(deployCall[1]).toEqual(['deploy', '--version-name', 'abc123sha']);
   });
 
-  it('passes Datadog credentials and metadata to the build command', async () => {
+  it('passes only the Datadog credentials through the environment', async () => {
     await run();
 
     expect(execModule.exec).toHaveBeenCalledWith(
-      'npm',
-      ['run', 'build'],
+      'datadog-apps',
+      ['deploy', '--version-name', 'abc123sha'],
       expect.objectContaining({
         env: expect.objectContaining({
           DATADOG_API_KEY: 'test-api-key',
-          DATADOG_APP_KEY: 'test-app-key',
-          DATADOG_APPS_VERSION_NAME: 'abc123sha',
-          DATADOG_APPS_UPLOAD_ASSETS: '1'
+          DATADOG_APP_KEY: 'test-app-key'
         })
       })
     );
+    const deployEnv = execModule.exec.mock.calls[2][2]?.env ?? {};
+    expect(deployEnv).not.toHaveProperty('DATADOG_APPS_VERSION_NAME');
   });
 
-  it('uses GITHUB_SHA as the app version name', async () => {
+  it('passes GITHUB_SHA as --version-name to the deploy command', async () => {
     process.env.GITHUB_SHA = 'deadbeef';
 
     await run();
 
     expect(execModule.exec).toHaveBeenCalledWith(
-      'npm',
-      ['run', 'build'],
-      expect.objectContaining({
-        env: expect.objectContaining({ DATADOG_APPS_VERSION_NAME: 'deadbeef' })
-      })
+      'datadog-apps',
+      ['deploy', '--version-name', 'deadbeef'],
+      expect.any(Object)
     );
   });
 
-  it('defaults version name to empty string when GITHUB_SHA is unset', async () => {
+  it('omits --version-name when GITHUB_SHA is unset', async () => {
     delete process.env.GITHUB_SHA;
 
     await run();
 
-    expect(execModule.exec).toHaveBeenCalledWith(
-      'npm',
-      ['run', 'build'],
-      expect.objectContaining({
-        env: expect.objectContaining({ DATADOG_APPS_VERSION_NAME: '' })
-      })
-    );
+    const deployCall = execModule.exec.mock.calls[2];
+    expect(deployCall[1]).toEqual(['deploy']);
   });
 
   it('uses a custom install command', async () => {
@@ -146,21 +147,45 @@ describe('run()', () => {
     );
   });
 
-  it('uses a custom build command', async () => {
+  it('installs a pinned CLI version when cli-version is set', async () => {
     core.getInput.mockImplementation((name: string) => {
       if (name === 'datadog-api-key') return 'test-api-key';
       if (name === 'datadog-app-key') return 'test-app-key';
-      if (name === 'build-command') return 'pnpm build --mode production';
+      if (name === 'cli-version') return '0.0.1';
+      return '';
+    });
+
+    await run();
+
+    expect(execModule.exec).toHaveBeenCalledWith('npm', [
+      'install',
+      '--global',
+      '@datadog/apps-cli@0.0.1'
+    ]);
+  });
+
+  it('passes the datadog-site input as --site to the deploy command', async () => {
+    core.getInput.mockImplementation((name: string) => {
+      if (name === 'datadog-api-key') return 'test-api-key';
+      if (name === 'datadog-app-key') return 'test-app-key';
+      if (name === 'datadog-site') return 'datadoghq.eu';
       return '';
     });
 
     await run();
 
     expect(execModule.exec).toHaveBeenCalledWith(
-      'pnpm',
-      ['build', '--mode', 'production'],
+      'datadog-apps',
+      ['deploy', '--site', 'datadoghq.eu', '--version-name', 'abc123sha'],
       expect.any(Object)
     );
+  });
+
+  it('omits --site when the datadog-site input is not set', async () => {
+    await run();
+
+    const deployCall = execModule.exec.mock.calls[2];
+    expect(deployCall[1]).toEqual(['deploy', '--version-name', 'abc123sha']);
   });
 
   it('runs commands in the specified app directory', async () => {
@@ -174,8 +199,8 @@ describe('run()', () => {
     await run();
 
     expect(execModule.exec).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.any(Array),
+      'datadog-apps',
+      ['deploy', '--version-name', 'abc123sha'],
       expect.objectContaining({ cwd: '/path/to/app' })
     );
   });
@@ -205,14 +230,25 @@ describe('run()', () => {
     expect(core.setFailed).toHaveBeenCalledWith('npm ci failed');
   });
 
-  it('fails when the build command exits with an error', async () => {
+  it('fails when the CLI installation exits with an error', async () => {
     execModule.exec
       .mockResolvedValueOnce(0)
-      .mockRejectedValueOnce(new Error('build script failed'));
+      .mockRejectedValueOnce(new Error('npm install failed'));
 
     await run();
 
-    expect(core.setFailed).toHaveBeenCalledWith('build script failed');
+    expect(core.setFailed).toHaveBeenCalledWith('npm install failed');
+  });
+
+  it('fails when the deploy command exits with an error', async () => {
+    execModule.exec
+      .mockResolvedValueOnce(0)
+      .mockResolvedValueOnce(0)
+      .mockRejectedValueOnce(new Error('deploy failed'));
+
+    await run();
+
+    expect(core.setFailed).toHaveBeenCalledWith('deploy failed');
   });
 
   it('does not call setFailed on a successful run', async () => {
