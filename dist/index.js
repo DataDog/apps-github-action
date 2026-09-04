@@ -28824,6 +28824,33 @@ function info(message) {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** The npm package name of the Datadog Apps CLI. */
+const CLI_PACKAGE_NAME = '@datadog/apps-cli';
+/**
+ * Path to the `datadog-apps` binary when the project has the CLI installed,
+ * or undefined. Searches `node_modules/.bin` upward from the app directory,
+ * the same way npx itself resolves binaries.
+ *
+ * Checking the binary rather than package.json matters: a custom install
+ * command can skip the section that lists the CLI (for example,
+ * `npm ci --omit=dev`), and bare `npx datadog-apps` would then fetch the
+ * unrelated registry package `datadog-apps` instead of failing.
+ *
+ * @param appDirectory Root directory of the app
+ * @returns Absolute path to the installed binary, or undefined.
+ */
+function findLocalCliBin(appDirectory) {
+    for (let directory = path.resolve(appDirectory);; directory = path.dirname(directory)) {
+        const bin = path.join(directory, 'node_modules', '.bin', 'datadog-apps');
+        if (fs.existsSync(bin)) {
+            return bin;
+        }
+        const parent = path.dirname(directory);
+        if (parent === directory) {
+            return undefined;
+        }
+    }
+}
 /**
  * The main function for the action.
  *
@@ -28842,13 +28869,14 @@ async function run() {
         setSecret(datadogAppKey);
         const appDirectory = path.resolve(getInput('app-directory') || '.');
         const installCommand = getInput('install-command') || 'npm ci';
-        const buildCommand = getInput('build-command') || 'npm run build';
+        const datadogSite = getInput('datadog-site');
+        const cliVersion = getInput('cli-version') || 'latest';
         // Verify app directory exists
         if (!fs.existsSync(appDirectory)) {
             throw new Error(`App directory '${appDirectory}' does not exist`);
         }
         info(`✓ App directory found: ${appDirectory}`);
-        // Step 1: Install dependencies (if install command is provided)`
+        // Step 1: Install dependencies (if install command is provided)
         if (installCommand) {
             info(`Installing dependencies with command: ${installCommand}`);
             const installArgs = installCommand.split(' ');
@@ -28857,24 +28885,40 @@ async function run() {
             await exec(installCmd, installCmdArgs, { cwd: appDirectory });
             info('✓ Dependencies installed successfully');
         }
-        // Step 2: Build the Vite app (with upload)
+        // Step 2: Build, upload, and publish the app with the CLI, which owns the
+        // whole deployment now that the build plugins no longer upload. When the
+        // project has @datadog/apps-cli installed, npx runs that version;
+        // otherwise it fetches the version from the cli-version input into the
+        // runner user's npx cache — no global install, so no write access to
+        // npm's global prefix and no mutation of shared runner state. Every
+        // option is passed as a CLI flag; only the API and app keys go through
+        // the environment, which is where the CLI reads them from.
         const gitSha = process.env.GITHUB_SHA || '';
-        info(`Building Vite app with command: ${buildCommand}`);
-        info(`Git commit SHA: ${gitSha}`);
-        const buildArgs = buildCommand.split(' ');
-        const buildCmd = buildArgs[0];
-        const buildCmdArgs = buildArgs.slice(1);
-        await exec(buildCmd, buildCmdArgs, {
+        const deployArgs = ['--yes'];
+        if (findLocalCliBin(appDirectory)) {
+            info(`✓ Project ${CLI_PACKAGE_NAME} found; running that version with npx`);
+        }
+        else {
+            deployArgs.push('--package', `${CLI_PACKAGE_NAME}@${cliVersion}`);
+            info(`Running ${CLI_PACKAGE_NAME}@${cliVersion} with npx`);
+        }
+        deployArgs.push('datadog-apps', 'deploy');
+        if (datadogSite) {
+            deployArgs.push('--site', datadogSite);
+        }
+        if (gitSha) {
+            deployArgs.push('--version-name', gitSha);
+        }
+        info(`Deploying Datadog App (version name: ${gitSha})`);
+        await exec('npx', deployArgs, {
             cwd: appDirectory,
             env: {
                 ...process.env,
                 DATADOG_API_KEY: datadogApiKey,
-                DATADOG_APP_KEY: datadogAppKey,
-                DATADOG_APPS_VERSION_NAME: gitSha,
-                DATADOG_APPS_UPLOAD_ASSETS: '1'
+                DATADOG_APP_KEY: datadogAppKey
             }
         });
-        info('✓ Build and upload completed successfully');
+        info('✓ Build, upload, and publish completed successfully');
         info(`✓ Your app has been deployed to Datadog! 🎉`);
     }
     catch (error) {
