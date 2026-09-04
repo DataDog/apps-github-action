@@ -111,7 +111,7 @@ through the environment, which is where the CLI reads them from.
 | `app-directory`   | The path to your Datadog App's root directory                                                                                                                                                                                               | No       | `.`      |
 | `install-command` | Command to install dependencies before deploying                                                                                                                                                                                            | No       | `npm ci` |
 | `datadog-site`    | Datadog site to deploy to (for example, `datadoghq.eu`). When not set, the CLI resolves the site from the `DD_SITE` or `DATADOG_SITE` environment variable, or the `datadogSite` field of the app's `datadog-app.config.json`               | No       |          |
-| `cli-version`     | Version of `@datadog/apps-cli` to run when the CLI is not installed in the app's `node_modules`; `npx` fetches that version at run time. Ignored otherwise                                                                                  | No       | `latest` |
+| `cli-version`     | Version of `@datadog/apps-cli` to run when the CLI is not installed in the app's `node_modules`; `npx` fetches that version at runtime. Ignored otherwise                                                                                   | No       | `latest` |
 
 ## Contributing
 

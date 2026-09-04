@@ -47,7 +47,7 @@ inputs:
   cli-version:
     description: >-
       Version of @datadog/apps-cli to run when the CLI is not installed in the
-      app's node_modules; npx fetches that version at run time. Ignored when the
+      app's node_modules; npx fetches that version at runtime. Ignored when the
       CLI is already installed in the app's node_modules.
     required: false
     default: latest
