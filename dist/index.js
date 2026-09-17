@@ -28894,23 +28894,23 @@ async function run() {
         // option is passed as a CLI flag; only the API and app keys go through
         // the environment, which is where the CLI reads them from.
         const gitSha = process.env.GITHUB_SHA || '';
-        const deployArgs = ['--yes'];
+        const uploadArgs = ['--yes'];
         if (findLocalCliBin(appDirectory)) {
             info(`✓ Project ${CLI_PACKAGE_NAME} found; running that version with npx`);
         }
         else {
-            deployArgs.push('--package', `${CLI_PACKAGE_NAME}@${cliVersion}`);
+            uploadArgs.push('--package', `${CLI_PACKAGE_NAME}@${cliVersion}`);
             info(`Running ${CLI_PACKAGE_NAME}@${cliVersion} with npx`);
         }
-        deployArgs.push('datadog-apps', 'deploy');
+        uploadArgs.push('datadog-apps', 'upload');
         if (datadogSite) {
-            deployArgs.push('--site', datadogSite);
+            uploadArgs.push('--site', datadogSite);
         }
         if (gitSha) {
-            deployArgs.push('--version-name', gitSha);
+            uploadArgs.push('--version-name', gitSha);
         }
         info(`Deploying Datadog App (version name: ${gitSha})`);
-        await exec('npx', deployArgs, {
+        await exec('npx', uploadArgs, {
             cwd: appDirectory,
             env: {
                 ...process.env,

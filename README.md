@@ -90,7 +90,7 @@ jobs:
 The action installs your app's dependencies, then builds, uploads, and publishes
 the app with the
 [Datadog Apps CLI](https://www.npmjs.com/package/@datadog/apps-cli) by running
-`datadog-apps deploy` in your app's directory, always through `npx`. When the
+`datadog-apps upload` in your app's directory, always through `npx`. When the
 CLI is already installed in your app's `node_modules` (for example, as a
 dependency installed by your install command), that version runs. Otherwise,
 `npx` fetches the version from the `cli-version` input into the runner user's

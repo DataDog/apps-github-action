@@ -79,7 +79,7 @@ describe('run()', () => {
     expect(core.setSecret).toHaveBeenCalledWith('test-app-key');
   });
 
-  it('runs the install command, then deploys through npx', async () => {
+  it('runs the install command, then uploads through npx', async () => {
     await run();
 
     expect(execModule.exec).toHaveBeenCalledTimes(2);
@@ -92,7 +92,7 @@ describe('run()', () => {
       '--package',
       '@datadog/apps-cli@latest',
       'datadog-apps',
-      'deploy',
+      'upload',
       '--version-name',
       'abc123sha'
     ]);
@@ -115,7 +115,7 @@ describe('run()', () => {
     expect(deployEnv).not.toHaveProperty('DATADOG_APPS_VERSION_NAME');
   });
 
-  it('passes GITHUB_SHA as --version-name to the deploy command', async () => {
+  it('passes GITHUB_SHA as --version-name to the upload command', async () => {
     process.env.GITHUB_SHA = 'deadbeef';
 
     await run();
@@ -136,7 +136,7 @@ describe('run()', () => {
       '--package',
       '@datadog/apps-cli@latest',
       'datadog-apps',
-      'deploy'
+      'upload'
     ]);
   });
 
@@ -185,7 +185,7 @@ describe('run()', () => {
     expect(deployCall[1]).toEqual([
       '--yes',
       'datadog-apps',
-      'deploy',
+      'upload',
       '--version-name',
       'abc123sha'
     ]);
@@ -211,7 +211,7 @@ describe('run()', () => {
     expect(deployCall[1]).toEqual([
       '--yes',
       'datadog-apps',
-      'deploy',
+      'upload',
       '--version-name',
       'abc123sha'
     ]);
@@ -236,7 +236,7 @@ describe('run()', () => {
     expect(deployCall[1]).not.toContain('@datadog/apps-cli@0.0.1');
   });
 
-  it('passes the datadog-site input as --site to the deploy command', async () => {
+  it('passes the datadog-site input as --site to the upload command', async () => {
     core.getInput.mockImplementation((name: string) => {
       if (name === 'datadog-api-key') return 'test-api-key';
       if (name === 'datadog-app-key') return 'test-app-key';
@@ -258,7 +258,7 @@ describe('run()', () => {
     expect(deployCall[1]).not.toContain('--site');
   });
 
-  it('runs the deploy command in the specified app directory', async () => {
+  it('runs the upload command in the specified app directory', async () => {
     core.getInput.mockImplementation((name: string) => {
       if (name === 'datadog-api-key') return 'test-api-key';
       if (name === 'datadog-app-key') return 'test-app-key';
@@ -300,14 +300,14 @@ describe('run()', () => {
     expect(core.setFailed).toHaveBeenCalledWith('npm ci failed');
   });
 
-  it('fails when the deploy command exits with an error', async () => {
+  it('fails when the upload command exits with an error', async () => {
     execModule.exec
       .mockResolvedValueOnce(0)
-      .mockRejectedValueOnce(new Error('deploy failed'));
+      .mockRejectedValueOnce(new Error('upload failed'));
 
     await run();
 
-    expect(core.setFailed).toHaveBeenCalledWith('deploy failed');
+    expect(core.setFailed).toHaveBeenCalledWith('upload failed');
   });
 
   it('does not call setFailed on a successful run', async () => {
