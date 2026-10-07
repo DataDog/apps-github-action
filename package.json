@@ -67,5 +67,32 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "*"
+  },
+  "overrides": {
+    "@github/local-action": {
+      "undici": "^7.30.0"
+    },
+    "@actions/core": {
+      "@actions/http-client": {
+        "undici": "^6.29.0"
+      }
+    },
+    "ts-jest-resolver": {
+      "jest-resolve": {
+        "jest-haste-map": {
+          "jest-util": {
+            "picomatch": "^2.3.2"
+          },
+          "jest-worker": {
+            "jest-util": {
+              "picomatch": "^2.3.2"
+            }
+          }
+        },
+        "jest-util": {
+          "picomatch": "^2.3.2"
+        }
+      }
+    }
   }
 }
